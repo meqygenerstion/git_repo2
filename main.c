@@ -13,7 +13,6 @@ void error(char *text)
 
 static int safe_cube(int n)
 {
-    // Считаем n^3 в расширенном типе и проверяем, что помещается в int
     int64_t n2 = (int64_t)n * n;
     int64_t n3 = n2 * n;
     if (n3 > INT_MAX)
@@ -23,14 +22,17 @@ static int safe_cube(int n)
     return (int)n3;
 }
 
-static int parse_int(const char *s, int min, int max, const char *name, int *out)
+static int parse_int(const char *s, const char *name, int *out)
 {
     char *end = NULL;
-    errno = 0;
     long v = strtol(s, &end, 10);
-    if (errno || end == s || *end != '\0' || v < min || v > max)
+
+    if (end == s || *end != '\0' || v < 1 || v > INT_MAX)
     {
-        error(sprintf("Ошибка: аргумент '%s' вне диапазона [%d;%d] или некорректен: \"%s\".\n", name, min, max, s));
+        char *buffer[100];
+        sprintf("Ошибка: аргумент '%s' вне диапазона [%d;%d] или некорректен: \"%s\".\n", name, 1, INT_MAX, s);
+
+        error((char *)buffer);
     }
     *out = (int)v;
     return 1;
@@ -39,7 +41,7 @@ static int parse_int(const char *s, int min, int max, const char *name, int *out
 static int read_int(char **argv, int index, const char *name)
 {
     int target = 0;
-    if (!parse_int(argv[index], 1, INT_MAX, name, &target))
+    if (!parse_int(argv[index], name, &target))
     {
         error("Не получилось считать число");
     }
@@ -61,22 +63,48 @@ void change_seed()
     srand(seed);
 }
 
-int find_mod(int *a, int *b, int length, int target)
+int *create_vec(int length)
+{
+    int *a = (int *)malloc(sizeof(int) * length);
+
+    if (!a)
+    {
+        free(a);
+        error("Ошибка: Недостаточно памяти");
+    }
+
+    return a;
+}
+
+void fill_random_vec(int *a, int length)
 {
     int min = 0, max = 999;
 
-    size_t k = 0;
     for (int i = 0; i < length; ++i)
     {
-        int r = min + rand() % (max - min + 1);
-        a[i] = r;
-        if (r % target == 0)
+        int r = 0;
+
+        while (r == 0)
         {
-            b[k++] = r;
+            r = min + rand() % (max - min + 1);
+        }
+
+        a[i] = r;
+    }
+}
+
+int find_mod(int *a, int length, int target)
+{
+
+    for (int i = 0; i < length; ++i)
+    {
+        if (a[i] % target == 0)
+        {
+            return a[i];
         }
     }
 
-    return k;
+    return -1;
 }
 
 void print_vec(char *title, int *a, int length)
@@ -94,11 +122,10 @@ void print_vec(char *title, int *a, int length)
 int main(int argc, char **argv)
 {
     check_args(argc, 3, "Usage:\n"
-                        "  ./main <length> <n> [seed]\n\n"
+                        "  ./main <length> <n>\n\n"
                         "Meaning:\n"
                         "  length  - размер вектора (>=1)\n"
-                        "  n       - целое >=1; ищем элементы, кратные n^3\n"
-                        "  seed    - необязательный seed для PRNG\n");
+                        "  n       - целое >=1; ищем элементы, кратные n^3\n");
 
     int length = read_int(argv, 1, "length");
     int n = read_int(argv, 2, "n");
@@ -107,21 +134,23 @@ int main(int argc, char **argv)
 
     int n3 = safe_cube(n);
 
-    int *a = (int *)malloc(sizeof(int) * (size_t)length);
-    int *b = (int *)malloc(sizeof(int) * (size_t)length);
+    int *a = create_vec(length);
+    int *b = create_vec(length);
 
-    if (!a || !b)
+    fill_random_vec(a, length);
+
+    int finded = find_mod(a, length, n3);
+
+    print_vec("A (исходный вектор)", a, length);
+
+    if (finded == -1)
     {
-        free(a);
-        free(b);
-
-        error("Ошибка: недостаточно памяти.\n");
+        printf("Не найдено кратное число\n");
     }
-
-    int b_length = find_mod(a, b, length, n3);
-
-    print_vec("A (исходный)", a, length);
-    print_vec("B (кратные n^3)", b, b_length);
+    else
+    {
+        printf("Первое кратное число: %d\n", finded);
+    }
 
     free(a);
     free(b);
