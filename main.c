@@ -5,58 +5,31 @@
 #include <time.h>
 #include <errno.h>
 
-void error(char *text)
+int safe_cube(int n, int *out)
 {
-    fprintf(stderr, "%s", text);
-    exit(1);
-}
-
-int safe_cube(int n)
-{
-    int n2 = n * n;
-    int n3 = n2 * n;
+    long long n2 = (long long)n * n;
+    long long n3 = n2 * n;
 
     if (n3 > INT_MAX)
     {
-        error("Слишком большое число");
+        return 0; // ошибка
     }
 
-    return (int)n3;
+    *out = (int)n3;
+    return 1; // успех
 }
 
-int parse_int(const char *s, const char *name, int *out)
+int parse_int(const char *s, int *out)
 {
     char *end = NULL;
     long v = strtol(s, &end, 10);
 
     if (end == s || *end != '\0' || v < 1 || v > INT_MAX)
     {
-        char *buffer[100];
-        sprintf("Ошибка: аргумент '%s' вне диапазона [%d;%d] или некорректен: \"%s\".\n", name, 1, INT_MAX, s);
-
-        error((char *)buffer);
+        return 0;
     }
     *out = (int)v;
     return 1;
-}
-
-int read_int(char **argv, int index, const char *name)
-{
-    int target = 0;
-    if (!parse_int(argv[index], name, &target))
-    {
-        error("Не получилось считать число");
-    }
-
-    return target;
-}
-
-void check_args(int argc, int needed, char *text)
-{
-    if (argc < needed)
-    {
-        error(text);
-    }
 }
 
 void change_seed()
@@ -71,8 +44,7 @@ int *create_vec(int length)
 
     if (!a)
     {
-        free(a);
-        error("Ошибка: Недостаточно памяти");
+        return NULL;
     }
 
     return a;
@@ -85,19 +57,16 @@ void fill_random_vec(int *a, int length)
     for (int i = 0; i < length; ++i)
     {
         int r = 0;
-
         while (r == 0)
         {
             r = min + rand() % (max - min + 1);
         }
-
         a[i] = r;
     }
 }
 
 int find_mod(int *a, int length, int target)
 {
-
     for (int i = 0; i < length; ++i)
     {
         if (a[i] % target == 0)
@@ -105,7 +74,6 @@ int find_mod(int *a, int length, int target)
             return a[i];
         }
     }
-
     return -1;
 }
 
@@ -123,21 +91,52 @@ void print_vec(char *title, int *a, int length)
 
 int main(int argc, char **argv)
 {
-    check_args(argc, 3, "Usage:\n"
+    if (argc < 3)
+    {
+        fprintf(stderr, "Usage:\n"
                         "  ./main <length> <n>\n\n"
                         "Meaning:\n"
                         "  length  - размер вектора (>=1)\n"
                         "  n       - целое >=1; ищем элементы, кратные n^3\n");
+        return 1;
+    }
 
-    int length = read_int(argv, 1, "length");
-    int n = read_int(argv, 2, "n");
+    int length = 0, n = 0;
+
+    if (!parse_int(argv[1], &length))
+    {
+
+        fprintf(stderr, "Ошибка: аргумент 'length' вне диапазона [%d;%d].\n",
+                1, INT_MAX);
+
+        return 1;
+    }
+
+    if (!parse_int(argv[2], &n))
+    {
+
+        fprintf(stderr, "Ошибка: аргумент 'n' вне диапазона [%d;%d].\n",
+                1, INT_MAX);
+
+        return 1;
+    }
+
+    int n3 = 0;
+
+    if (!safe_cube(n, &n3))
+    {
+        fprintf(stderr, "Слишком большое число\n");
+        return 1;
+    }
 
     change_seed();
 
-    int n3 = safe_cube(n);
-
     int *a = create_vec(length);
-    int *b = create_vec(length);
+    if (!a)
+    {
+        fprintf(stderr, "Ошибка: Недостаточно памяти\n");
+        return 1;
+    }
 
     fill_random_vec(a, length);
 
@@ -157,7 +156,6 @@ int main(int argc, char **argv)
     }
 
     free(a);
-    free(b);
 
     return 0;
 }
