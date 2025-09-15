@@ -11,18 +11,20 @@ void error(char *text)
     exit(1);
 }
 
-static int safe_cube(int n)
+int safe_cube(int n)
 {
-    int64_t n2 = (int64_t)n * n;
-    int64_t n3 = n2 * n;
+    int n2 = n * n;
+    int n3 = n2 * n;
+
     if (n3 > INT_MAX)
     {
         error("Слишком большое число");
     }
+
     return (int)n3;
 }
 
-static int parse_int(const char *s, const char *name, int *out)
+int parse_int(const char *s, const char *name, int *out)
 {
     char *end = NULL;
     long v = strtol(s, &end, 10);
@@ -38,7 +40,7 @@ static int parse_int(const char *s, const char *name, int *out)
     return 1;
 }
 
-static int read_int(char **argv, int index, const char *name)
+int read_int(char **argv, int index, const char *name)
 {
     int target = 0;
     if (!parse_int(argv[index], name, &target))
@@ -140,6 +142,8 @@ int main(int argc, char **argv)
     fill_random_vec(a, length);
 
     int finded = find_mod(a, length, n3);
+
+    printf("length = %d, n^3 = %d\n\n", length, n3);
 
     print_vec("A (исходный вектор)", a, length);
 
