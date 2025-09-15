@@ -7,16 +7,22 @@
 
 int safe_cube(int n, int *out)
 {
+    int flag = 1;
+
     long long n2 = (long long)n * n;
     long long n3 = n2 * n;
 
     if (n3 > INT_MAX)
     {
-        return 0; // ошибка
+        flag = 0;
     }
 
-    *out = (int)n3;
-    return 1; // успех
+    if (flag)
+    {
+        *out = (int)n3;
+    }
+
+    return flag;
 }
 
 int parse_int(const char *s, int *out)
@@ -24,12 +30,19 @@ int parse_int(const char *s, int *out)
     char *end = NULL;
     long v = strtol(s, &end, 10);
 
+    int flag = 1;
+
     if (end == s || *end != '\0' || v < 1 || v > INT_MAX)
     {
-        return 0;
+        flag = 0;
     }
-    *out = (int)v;
-    return 1;
+
+    if (flag)
+    {
+        *out = (int)v;
+    }
+
+    return flag;
 }
 
 void change_seed()
@@ -41,11 +54,6 @@ void change_seed()
 int *create_vec(int length)
 {
     int *a = (int *)malloc(sizeof(int) * length);
-
-    if (!a)
-    {
-        return NULL;
-    }
 
     return a;
 }
@@ -61,20 +69,25 @@ void fill_random_vec(int *a, int length)
         {
             r = min + rand() % (max - min + 1);
         }
+
         a[i] = r;
     }
 }
 
-int find_mod(int *a, int length, int target)
+int find_int_by_mod(int *a, int length, int target)
 {
+    int mod = -1;
+
     for (int i = 0; i < length; ++i)
     {
         if (a[i] % target == 0)
         {
-            return a[i];
+            mod = a[i];
+            break;
         }
     }
-    return -1;
+
+    return mod;
 }
 
 void print_vec(char *title, int *a, int length)
@@ -131,16 +144,19 @@ int main(int argc, char **argv)
 
     change_seed();
 
-    int *a = create_vec(length);
+    int *a = (int *)malloc(sizeof(int) * length);
+
     if (!a)
     {
+        free(a);
         fprintf(stderr, "Ошибка: Недостаточно памяти\n");
+
         return 1;
     }
 
     fill_random_vec(a, length);
 
-    int finded = find_mod(a, length, n3);
+    int finded = find_int_by_mod(a, length, n3);
 
     printf("length = %d, n^3 = %d\n\n", length, n3);
 
