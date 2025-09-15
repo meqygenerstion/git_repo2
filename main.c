@@ -51,13 +51,6 @@ void change_seed()
     srand(seed);
 }
 
-int *create_vec(int length)
-{
-    int *a = (int *)malloc(sizeof(int) * length);
-
-    return a;
-}
-
 void fill_random_vec(int *a, int length)
 {
     int min = 0, max = 999;
@@ -118,7 +111,6 @@ int main(int argc, char **argv)
 
     if (!parse_int(argv[1], &length))
     {
-
         fprintf(stderr, "Ошибка: аргумент 'length' вне диапазона [%d;%d].\n",
                 1, INT_MAX);
 
@@ -127,7 +119,6 @@ int main(int argc, char **argv)
 
     if (!parse_int(argv[2], &n))
     {
-
         fprintf(stderr, "Ошибка: аргумент 'n' вне диапазона [%d;%d].\n",
                 1, INT_MAX);
 
